@@ -26,31 +26,21 @@ void PrintFlowMonitorStats(Ptr<FlowMonitor> flowMonitor)
     double totalDelay = 0;
     uint32_t numFlows = 0;
 
-    Time simTime = Simulator::Now();
-
     for (auto flow : stats)
     {
         numFlows++;
         FlowMonitor::FlowStats flowStats = flow.second;
         
-
-	// Sửa lại cách tính throughput:
-	double throughput = flowStats.rxBytes * 8.0 / (simTime.GetSeconds()); // Lấy simTime để tính throughput, không dùng Simulator::Now()
-        totalThroughput += throughput;
+        totalThroughput += flowStats.rxBytes * 8.0 / (Simulator::Now().GetSeconds());
         
-        // Packets sent
         totalPacketsSent += flowStats.txPackets;
 
-        // Packets received
         totalPacketsReceived += flowStats.rxPackets;
 
-        // Packet loss
         totalPacketLoss += flowStats.lostPackets;
 
-        // Delay (in seconds)
         totalDelay += flowStats.delaySum.GetSeconds();
 
-        // Print per-flow stats (optional)
         cout << "Flow ID: " << flow.first << std::endl;
         cout << "  Packets Sent: " << flowStats.txPackets << std::endl;
         cout << "  Packets Received: " << flowStats.rxPackets << std::endl;
@@ -169,8 +159,6 @@ void main_function(uint32_t nNodes, uint32_t packetSize, bool verbose, bool pcap
   
   flowMonitor->SerializeToXmlFile("DataCollection.xml", true, true);
 }
-
-// Function to print FlowMonitor statistics
 
 int main(int argc, char *argv[])
 {
