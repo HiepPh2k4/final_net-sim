@@ -16,7 +16,6 @@ NS_LOG_COMPONENT_DEFINE("WifiAdhoc");
 
 void PrintFlowMonitorStats(Ptr<FlowMonitor> flowMonitor)
 {
-    // Iterate over all flows and print statistics
     FlowMonitor::FlowStatsContainer stats = flowMonitor->GetFlowStats();
 
     double totalThroughput = 0;
@@ -30,39 +29,39 @@ void PrintFlowMonitorStats(Ptr<FlowMonitor> flowMonitor)
     {
         numFlows++;
         FlowMonitor::FlowStats flowStats = flow.second;
-        
-        totalThroughput += flowStats.rxBytes * 8.0 / (Simulator::Now().GetSeconds());
-        
+
+        double flowDuration = (flowStats.timeLastRxPacket.GetSeconds() - flowStats.timeFirstTxPacket.GetSeconds());
+
+        double flowThroughput = (flowDuration > 0) ? (flowStats.rxBytes * 8.0 / flowDuration) : 0;
+
+        totalThroughput += flowThroughput;
         totalPacketsSent += flowStats.txPackets;
-
         totalPacketsReceived += flowStats.rxPackets;
-
         totalPacketLoss += flowStats.lostPackets;
-
         totalDelay += flowStats.delaySum.GetSeconds();
 
         cout << "Flow ID: " << flow.first << std::endl;
         cout << "  Packets Sent: " << flowStats.txPackets << std::endl;
         cout << "  Packets Received: " << flowStats.rxPackets << std::endl;
         cout << "  Packet Loss: " << flowStats.lostPackets << std::endl;
-        cout << "  Throughput: " << flowStats.rxBytes * 8.0 / Simulator::Now().GetSeconds() << " bps" << std::endl;
-        cout << "  Average Delay: " << flowStats.delaySum.GetSeconds() / flowStats.rxPackets << " seconds" << std::endl;
-       	cout << "------------------------------------------" << std::endl;
+        cout << "  Throughput: " << flowThroughput << " bps" << std::endl;
+        cout << "  Average Delay: " 
+             << ((flowStats.rxPackets > 0) ? (flowStats.delaySum.GetSeconds() / flowStats.rxPackets) : 0)
+             << " seconds" << std::endl;
+        cout << "------------------------------------------" << std::endl;
     }
 
-    // Calculate and print aggregate stats
-    double packetDeliveryRatio = totalPacketsSent > 0 ? (totalPacketsReceived / totalPacketsSent) * 100.0 : 0;
-    double averageDelay = numFlows > 0 ? (totalDelay / totalPacketsReceived) : 0;
+    double packetDeliveryRatio = (totalPacketsSent > 0) ? (totalPacketsReceived / totalPacketsSent) * 100.0 : 0;
+    double averageDelay = (totalPacketsReceived > 0) ? (totalDelay / totalPacketsReceived) : 0;
 
     cout << "Summary Statistics:" << std::endl;
-    cout << "  Total Throughput: " << totalThroughput / numFlows << " bps" << std::endl;
+    cout << "  Total Throughput: " << ((numFlows > 0) ? (totalThroughput / numFlows) : 0) << " bps" << std::endl;
     cout << "  Packet Delivery Ratio (PDR): " << packetDeliveryRatio << "%" << std::endl;
     cout << "  Total Packet Loss: " << totalPacketLoss << " packets" << std::endl;
     cout << "  Average Delay: " << averageDelay << " seconds" << std::endl;
     cout << "  Total Number of Flows: " << numFlows << std::endl;
     cout << "------------------------------------------" << std::endl;
 }
-
 
 void main_function(uint32_t nNodes, uint32_t packetSize, bool verbose, bool pcap, uint32_t maxPackets, uint32_t interval, uint32_t serverNode)
 { 
@@ -90,11 +89,11 @@ void main_function(uint32_t nNodes, uint32_t packetSize, bool verbose, bool pcap
   wifiPhy.SetChannel(channel.Create());
 
   WifiMacHelper mac;
-  WifiHelper wifi;
-
   mac.SetType("ns3::AdhocWifiMac");
 
   NetDeviceContainer devices;
+   
+  WifiHelper wifi;
   devices = wifi.Install(wifiPhy, mac, nodes);
 
   // Adding mobility model
