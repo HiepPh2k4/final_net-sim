@@ -45,9 +45,9 @@ void PrintFlowMonitorStats(Ptr<FlowMonitor> flowMonitor)
         cout << "  Packets Received: " << flowStats.rxPackets << std::endl;
         cout << "  Packet Loss: " << flowStats.lostPackets << std::endl;
         cout << "  Throughput: " << flowThroughput << " bps" << std::endl;
-        cout << "  Average Delay: " 
-             << ((flowStats.rxPackets > 0) ? (flowStats.delaySum.GetSeconds() / flowStats.rxPackets) : 0)
-             << " seconds" << std::endl;
+	cout << "  Average Delay: " 
+     	     << ((flowStats.rxPackets > 0) ? (flowStats.delaySum.GetSeconds() / flowStats.rxPackets) * 1000 : 0)
+     	     << " ms" << std::endl;
         cout << "------------------------------------------" << std::endl;
     }
 
@@ -58,7 +58,7 @@ void PrintFlowMonitorStats(Ptr<FlowMonitor> flowMonitor)
     cout << "  Total Throughput: " << ((numFlows > 0) ? (totalThroughput / numFlows) : 0) << " bps" << std::endl;
     cout << "  Packet Delivery Ratio (PDR): " << packetDeliveryRatio << "%" << std::endl;
     cout << "  Total Packet Loss: " << totalPacketLoss << " packets" << std::endl;
-    cout << "  Average Delay: " << averageDelay << " seconds" << std::endl;
+    cout << "  Average Delay: " << averageDelay * 1000 << " ms" << std::endl;
     cout << "  Total Number of Flows: " << numFlows << std::endl;
     cout << "------------------------------------------" << std::endl;
 }
@@ -156,7 +156,9 @@ void main_function(uint32_t nNodes, uint32_t packetSize, bool verbose, bool pcap
   
   PrintFlowMonitorStats(flowMonitor);
   
-  flowMonitor->SerializeToXmlFile("DataCollection.xml", true, true);
+  flowMonitor->SerializeToXmlFile("DataCollectionNode_" + std::to_string(nNodes) + ".xml", true, true);
+
+
 }
 
 int main(int argc, char *argv[])
