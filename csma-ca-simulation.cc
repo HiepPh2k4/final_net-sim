@@ -14,6 +14,66 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("WifiAdhoc");
 
+void PrintFlowMonitorStats(Ptr<FlowMonitor> flowMonitor)
+{
+    // Iterate over all flows and print statistics
+    FlowMonitor::FlowStatsContainer stats = flowMonitor->GetFlowStats();
+
+    double totalThroughput = 0;
+    double totalPacketsSent = 0;
+    double totalPacketsReceived = 0;
+    double totalPacketLoss = 0;
+    double totalDelay = 0;
+    uint32_t numFlows = 0;
+
+    Time simTime = Simulator::Now();
+
+    for (auto flow : stats)
+    {
+        numFlows++;
+        FlowMonitor::FlowStats flowStats = flow.second;
+        
+
+	// Sửa lại cách tính throughput:
+	double throughput = flowStats.rxBytes * 8.0 / (simTime.GetSeconds()); // Lấy simTime để tính throughput, không dùng Simulator::Now()
+        totalThroughput += throughput;
+        
+        // Packets sent
+        totalPacketsSent += flowStats.txPackets;
+
+        // Packets received
+        totalPacketsReceived += flowStats.rxPackets;
+
+        // Packet loss
+        totalPacketLoss += flowStats.lostPackets;
+
+        // Delay (in seconds)
+        totalDelay += flowStats.delaySum.GetSeconds();
+
+        // Print per-flow stats (optional)
+        cout << "Flow ID: " << flow.first << std::endl;
+        cout << "  Packets Sent: " << flowStats.txPackets << std::endl;
+        cout << "  Packets Received: " << flowStats.rxPackets << std::endl;
+        cout << "  Packet Loss: " << flowStats.lostPackets << std::endl;
+        cout << "  Throughput: " << flowStats.rxBytes * 8.0 / Simulator::Now().GetSeconds() << " bps" << std::endl;
+        cout << "  Average Delay: " << flowStats.delaySum.GetSeconds() / flowStats.rxPackets << " seconds" << std::endl;
+       	cout << "------------------------------------------" << std::endl;
+    }
+
+    // Calculate and print aggregate stats
+    double packetDeliveryRatio = totalPacketsSent > 0 ? (totalPacketsReceived / totalPacketsSent) * 100.0 : 0;
+    double averageDelay = numFlows > 0 ? (totalDelay / totalPacketsReceived) : 0;
+
+    cout << "Summary Statistics:" << std::endl;
+    cout << "  Total Throughput: " << totalThroughput / numFlows << " bps" << std::endl;
+    cout << "  Packet Delivery Ratio (PDR): " << packetDeliveryRatio << "%" << std::endl;
+    cout << "  Total Packet Loss: " << totalPacketLoss << " packets" << std::endl;
+    cout << "  Average Delay: " << averageDelay << " seconds" << std::endl;
+    cout << "  Total Number of Flows: " << numFlows << std::endl;
+    cout << "------------------------------------------" << std::endl;
+}
+
+
 void main_function(uint32_t nNodes, uint32_t packetSize, bool verbose, bool pcap, uint32_t maxPackets, uint32_t interval, uint32_t serverNode)
 { 
   cout << "Running simulation with " << nNodes << " nodes..." << endl;
@@ -105,9 +165,12 @@ void main_function(uint32_t nNodes, uint32_t packetSize, bool verbose, bool pcap
   Simulator::Run();
   Simulator::Destroy();
   
+  PrintFlowMonitorStats(flowMonitor);
+  
   flowMonitor->SerializeToXmlFile("DataCollection.xml", true, true);
 }
 
+// Function to print FlowMonitor statistics
 
 int main(int argc, char *argv[])
 {
